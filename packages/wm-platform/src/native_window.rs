@@ -659,7 +659,20 @@ impl NativeWindow {
           self.hide()
         }
       }
-      HideMethod::Cloak => self.set_cloaked(!visible),
+      HideMethod::Cloak => {
+        if visible {
+          // First make window visible to Windows APIs, then uncloak visually.
+          // This ensures applications can find the window again.
+          self.show()?;
+          self.set_cloaked(false)
+        } else {
+          // First cloak visually (no animation), then hide from Windows APIs.
+          // This prevents applications from detecting multiple window instances
+          // across workspaces (e.g., Firefox opening new windows instead of tabs).
+          self.set_cloaked(true)?;
+          self.hide()
+        }
+      }
     }
   }
 
